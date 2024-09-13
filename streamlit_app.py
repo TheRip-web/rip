@@ -164,8 +164,8 @@ with st.sidebar:
                    "GBPUSD": "British Pound / US- Dollar",
                    "AUDJPY": "Australian Dollar / Japanese Yen",
                    "FDAX": "DAX Futures",
-                   "ethusd": "ethusd",
-                   "btcusd": "Bitcoin",
+                   "ETHUSD": "Etherium / US- Dollar",
+                   "BTCUSD": "Bitcoin / US- Dollar",
                    }
 
     symbol = st.sidebar.selectbox(
