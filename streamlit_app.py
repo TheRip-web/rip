@@ -158,10 +158,14 @@ with st.sidebar:
                    "YM": "Dow Jones Futures",
                    "CL": "Light Crude Oil Futures",
                    "GC": "Gold Futures",
+                   "Silver": "Siver / US- Dollar",
                    "EURUSD": "Euro / US- Dollar",
+                   "EURAUD": "Euro / Australian Dollar",
                    "GBPUSD": "British Pound / US- Dollar",
                    "AUDJPY": "Australian Dollar / Japanese Yen",
-                   "FDAX": "DAX Futures"
+                   "FDAX": "DAX Futures",
+                   "ethusd": "ethusd",
+                   "btcusd": "Bitcoin",
                    }
 
     symbol = st.sidebar.selectbox(
