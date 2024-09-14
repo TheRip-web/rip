@@ -203,7 +203,7 @@ with select2:
         st.empty()
         # st.selectbox("Select day?", ["None"])
     elif data_filter == "By Day":
-        day_options = {0: "Monday", 1: "Tuesday", 2: "Wednesday", 3: "Thursday", 4: "Friday"}
+        day_options = {0: "Monday", 1: "Tuesday", 2: "Wednesday", 3: "Thursday", 4: "Friday", 5: "Saturday", 6: "Sunday"}
         day = st.selectbox("Select day?", np.unique(df.index.weekday), format_func=lambda x: day_options.get(x))
         df = df[df.index.weekday == day]
     elif data_filter == "By Month":
