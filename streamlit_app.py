@@ -159,6 +159,7 @@ with st.sidebar:
                    "CL": "Light Crude Oil Futures",
                    "GC": "Gold Futures",
                    "Silver": "Siver / US- Dollar",
+                   "Copper": "Copper / US- Dollar",
                    "EURUSD": "Euro / US- Dollar",
                    "EURAUD": "Euro / Australian Dollar",
                    "GBPUSD": "British Pound / US- Dollar",
