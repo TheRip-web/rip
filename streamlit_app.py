@@ -165,9 +165,10 @@ with st.sidebar:
                    "GBPUSD": "British Pound / US- Dollar",
                    "AUDJPY": "Australian Dollar / Japanese Yen",
                    "US100": "US100 Index",
+                   "WTI": "WTI Light Crude Oil",
                    "ETHUSD": "Etherium / US- Dollar",
                    "BTCUSD": "Bitcoin / US- Dollar",
-                   "WTI": "WTI Light Crude Oil",
+                   
                    }
 
     symbol = st.sidebar.selectbox(
