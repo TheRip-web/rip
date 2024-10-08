@@ -167,6 +167,7 @@ with st.sidebar:
                    "US100": "US100 Index",
                    "ETHUSD": "Etherium / US- Dollar",
                    "BTCUSD": "Bitcoin / US- Dollar",
+                   "WTI": "WTI Light Crude Oil",
                    }
 
     symbol = st.sidebar.selectbox(
