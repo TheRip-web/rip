@@ -164,7 +164,7 @@ with st.sidebar:
                    "EURAUD": "Euro / Australian Dollar",
                    "GBPUSD": "British Pound / US- Dollar",
                    "AUDJPY": "Australian Dollar / Japanese Yen",
-                   "FDAX": "DAX Futures",
+                   "US100": "US100 Index",
                    "ETHUSD": "Etherium / US- Dollar",
                    "BTCUSD": "Bitcoin / US- Dollar",
                    }
