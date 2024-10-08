@@ -182,7 +182,7 @@ with st.sidebar:
                         "London (3:00 - 8:30 EST)",
                         "Tokyo (09:30 - 14:30 JST)"])
 
-    orb_duration = st.sidebar.selectbox("Choose Opening Range Duration", [60, 30])
+    orb_duration = st.sidebar.selectbox("Choose Opening Range Duration", [60, 30, 15])
 
     file = os.path.join("data", f"{symbol.lower()}_{session_dict.get(session)}_{orb_duration}.csv")
     df = load_data(file)
@@ -209,7 +209,7 @@ with select2:
         df = df[df.index.weekday == day]
     elif data_filter == "By Month":
         month_options = {1: "January", 2: "February", 3: "March", 4: "April", 5: "May", 6: "June", 7: "July",
-                         8: "August", 9: "September", 10: "Oktober", 11: "November", 12: "December"}
+                         8: "August", 9: "September", 10: "October", 11: "November", 12: "December"}
         month = st.selectbox("Select month?", np.unique(df.index.month), format_func=lambda x: month_options.get(x))
         df = df[df.index.month == month]
     else:
