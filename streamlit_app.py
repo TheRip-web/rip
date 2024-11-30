@@ -175,13 +175,13 @@ with st.sidebar:
         "Choose your Symbol?",
         symbol_dict.keys())
 
-        session_dict = {"New York (9:30 - 16:00 EST)": "ny",
-                    "London (2:30 - 7:00 EST)": "ldn",
+    session_dict = {"New York (9:30 - 16:00 EST)": "ny",
+                    "London (3:00 - 8:30 EST)": "ldn",
                     "Tokyo (09:30 - 14:30 JST)": "asia"}
 
     session = st.radio("Choose your Session",
                        ["New York (9:30 - 16:00 EST)",
-                        "London (2:30 - 7:00 EST)",
+                        "London (3:00 - 8:30 EST)",
                         "Tokyo (09:30 - 14:30 JST)"])
 
     orb_duration = st.sidebar.selectbox("Choose Opening Range Duration", [60, 30, 15])
@@ -970,5 +970,4 @@ st.divider()
 start_date = df.index[0].strftime("%Y-%m-%d")
 end_date = df.index[-1].strftime("%Y-%m-%d")
 st.write(f"Statistics based on :red[{len(df)}] data points from :red[{start_date}] to :red[{end_date}]")
-
 
