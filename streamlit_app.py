@@ -175,12 +175,12 @@ with st.sidebar:
         "Choose your Symbol?",
         symbol_dict.keys())
 
-        session_dict = {"New York 1 (7:00 - 11:30 EST)": "ny",
+        session_dict = {"New York (9:30 - 16:00 EST)": "ny",
                     "London (2:30 - 7:00 EST)": "ldn",
                     "Tokyo (09:30 - 14:30 JST)": "asia"}
 
     session = st.radio("Choose your Session",
-                       ["New York 1 (7:00 - 11:30 EST)",
+                       ["New York (9:30 - 16:00 EST)",
                         "London (2:30 - 7:00 EST)",
                         "Tokyo (09:30 - 14:30 JST)"])
 
