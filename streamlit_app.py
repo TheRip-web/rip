@@ -177,14 +177,14 @@ with st.sidebar:
 
     session_dict = {"New York (7:30 - 11:30 EST)": "ny",
                     "New York 2 (11:30 - 16:15 EST)": "ny2",
-                    "London (2:30 - 8:30 EST)": "ldn",
-                    "Tokyo (09:30 - 14:30 JST)": "asia"}
+                    "London (2:30 - 7:30 EST)": "ldn",
+                    "Tokyo (08:30 - 14:30 JST)": "asia"}
 
     session = st.radio("Choose your Session",
                        ["New York (7:30 - 11:30 EST)",
                         "New York 2 (11:30 - 16:15 EST)",
-                        "London (2:30 - 8:30 EST)",
-                        "Tokyo (09:30 - 14:30 JST)"])
+                        "London (2:30 - 7:30 EST)",
+                        "Tokyo (08:30 - 14:30 JST)"])
 
     orb_duration = st.sidebar.selectbox("Choose Opening Range Duration", [60, 30, 15])
 
