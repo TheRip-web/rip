@@ -35,9 +35,8 @@ def load_data(file_path):
     df[date_cols] = df[date_cols].apply(pd.to_datetime, unit="us", utc=True)
     df[date_cols] = df[date_cols].apply(lambda x: x.dt.tz_convert('America/New_York'))
     df[date_cols] = df[date_cols].apply(lambda x: x.dt.time)
-
+    df['model_prev_prev'] = df['model_prev'].shift(1)
     return df
-
 
 def median_time_calcualtion(time_array):
     def parse_to_time(value):
@@ -58,22 +57,14 @@ def median_time_calcualtion(time_array):
     def seconds_to_time(seconds):
         return time(seconds // 3600, (seconds % 3600) // 60, seconds % 60)
 
-    # Parsen zu datetime.time
     parsed_times = [parse_to_time(value) for value in time_array]
-
     valid_times = [time_obj for time_obj in parsed_times if not pd.isna(time_obj)]
-
-    # Konvertieren zu Sekunden
     seconds_list = [time_to_seconds(time_obj) for time_obj in valid_times]
-
-    # Median berechnen
+    if not seconds_list:
+        return None
     median_seconds = sorted(seconds_list)[len(seconds_list) // 2]
-
-    # Zurückkonvertieren zu datetime.time
     median_time = seconds_to_time(median_seconds)
-
     return median_time
-
 
 def create_plot_df(df, groupby_column, inverse_percentile=False, ascending=True):
     plot_df = df.groupby(groupby_column).agg({"breakout_window": "count"})
@@ -87,7 +78,6 @@ def create_plot_df(df, groupby_column, inverse_percentile=False, ascending=True)
     if not ascending:
         plot_df = plot_df.sort_index(ascending=False)
     return plot_df
-
 
 def create_plotly_plot(df, title, x_title, y1_name="Pct", y2_name="Overall likelihood", y1="pct", y2="percentile",
                        line_color="red", reversed_x_axis=False):
@@ -112,7 +102,6 @@ def create_plotly_plot(df, title, x_title, y1_name="Pct", y2_name="Overall likel
 
     return subfig
 
-
 def create_join_table(first_symbol, second_symbol):
     cols_to_use = ["date", "greenbox", "breakout_time", "upday", "max_retracement_time", "max_expansion_time",
                    "retracement_level", "expansion_level", "closing_level"]
@@ -133,10 +122,7 @@ def create_join_table(first_symbol, second_symbol):
 
     return df_join
 
-
 def load_ml_model(symbol):
-    # load model
-    # try:
     filepath_ml_model = os.path.join("ml_models",
                                      f"{symbol.lower()}_{session_dict.get(session)}_simple_confirmation_bias_model.pickle")
     filepath_ml_scaler = os.path.join("ml_models",
@@ -150,7 +136,6 @@ def load_ml_model(symbol):
         return 0, f"No trained model for {symbol} available"
 
     return loaded_model, loaded_scaler
-
 
 with st.sidebar:
     symbol_dict = {"NQ": "Nasdaq 100 Futures",
@@ -168,7 +153,7 @@ with st.sidebar:
                    "WTI": "WTI Light Crude Oil",
                    "ETHUSD": "Etherium / US- Dollar",
                    "BTCUSD": "Bitcoin / US- Dollar",
-                   
+
                    }
 
     symbol = st.sidebar.selectbox(
@@ -206,7 +191,6 @@ with select1:
 with select2:
     if data_filter == "Total Dataset":
         st.empty()
-        # st.selectbox("Select day?", ["None"])
     elif data_filter == "By Day":
         day_options = {0: "Monday", 1: "Tuesday", 2: "Wednesday", 3: "Thursday", 4: "Friday", 5: "Saturday", 6: "Sunday"}
         day = st.selectbox("Select day?", np.unique(df.index.weekday), format_func=lambda x: day_options.get(x))
@@ -222,13 +206,6 @@ with select2:
 
 with select3:
     st.empty()
-    # model_radio = st.checkbox("Filter by current Session Model", [True, False])
-    # if model_radio:
-    #     model_filter = st.multiselect("Filter by Session Model",
-    #                                   df.model.unique(),
-    #                                   default=None,
-    #                                   placeholder="All Models")
-
 
 st.write("Do you want to narrow down your data further?")
 col1, col2, col3 = st.columns(3)
@@ -285,7 +262,6 @@ breakout_time = st.multiselect("Breakout time of the day", time_windows, default
 
 df = df[(df.breakout_window.isin(breakout_time)) &
         (df.model.isin(model_filter))]
-
 
 data_points = len(df.index)
 inv_param = [False if orb_side == "Long" else True][0]
@@ -357,7 +333,6 @@ with distribution_tab:
     use_orb_body = st.toggle("Use candle bodys for OR calculation",
                               help="Uses bodys to determine the opening range instead of wicks.")
 
-    #Retracement/Expansion DF
     df_ret = df[["retracement_window", "max_expansion_time"]].groupby(["retracement_window"]).count()
     df_ret["pct"] = df_ret["max_expansion_time"] / df_ret["max_expansion_time"].sum()
     df_exp = df[["max_retracement_time", "expansion_window"]].groupby(["expansion_window"]).count()
@@ -374,8 +349,8 @@ with distribution_tab:
     with col3:
 
         median_time = median_time_calcualtion(df["breakout_time"])
-        st.metric("Median breakout time:", value=str(median_time),
-                  delta=f"Mode breakout time: {df.breakout_time.mode()[0]}")
+        st.metric("Median breakout time:", value=str(median_time) if median_time else "N/A",
+                  delta=f"Mode breakout time: {df.breakout_time.mode()[0] if not df.breakout_time.empty else 'N/A'}")
         breakout = st.button("See Distribution", key="breakout")
 
         if breakout:
@@ -391,8 +366,8 @@ with distribution_tab:
         else:
             median_retracement_value = df.retracement_level.median()
 
-        st.metric("Median retracement before HoS/LoS:", value=str(median_retracement),
-                  delta=f"Median retracement value: {median_retracement_value}",
+        st.metric("Median retracement before HoS/LoS:", value=str(median_retracement) if median_retracement else "N/A",
+                  delta=f"Median retracement value: {median_retracement_value:.2f}",
                   )
         retracement = st.button("See Distribution", key="retracement")
 
@@ -411,8 +386,8 @@ with distribution_tab:
         else:
             median_expansion_value = df.expansion_level.median()
 
-        st.metric("Median time of max expansion:", value=str(median_expansion),
-                  delta=f"Median expansion value: {median_expansion_value}",
+        st.metric("Median time of max expansion:", value=str(median_expansion) if median_expansion else "N/A",
+                  delta=f"Median expansion value: {median_expansion_value:.2f}",
                   )
         expansion = st.button("See distribution", key="expansion")
 
@@ -541,7 +516,6 @@ with distribution_tab:
 
             st.line_chart(df_ret[["pct retracement", "pct expansion"]], color=[bar_color, line_color])
 
-
         with tab_data:
             st.dataframe(df2)
     elif st.session_state['range_button']:
@@ -551,7 +525,6 @@ with distribution_tab:
         range_group["pct"] = range_group["count"] / range_group["count"].sum()
         range_group["percentile"] = range_group["pct"].cumsum()
         range_group = range_group[range_group.index <=5]
-       # st.bar_chart(range_group, x="range_multiplier", y="pct")
 
         fig4 = create_plotly_plot(df=range_group,
                                       title="Range expansion vs. previous Session",
@@ -586,41 +559,49 @@ with model:
                    "Otherwise, these filters will reduce the amount of data from which the models can be formed and may lead to incorrect results. ")
     else:
 
-        model_df = df[["model", "model_prev", "upday_prev", "range_holds_prev", "upday"]].dropna()
+        model_df = df[["model", "model_prev", "model_prev_prev", "upday_prev", "range_holds_prev", "upday"]].dropna()
 
         order = ["Weak Uptrend", "Medium Uptrend", "Strong Uptrend", "Expansion", "Contraction", "Weak Downtrend",
                  "Medium Downtrend", "Strong Downtrend", ]
         model_df["model"] = pd.Categorical(model_df["model"], categories=order, ordered=True)
         model_df["model_prev"] = pd.Categorical(model_df["model_prev"], categories=order, ordered=True)
+        model_df["model_prev_prev"] = pd.Categorical(model_df["model_prev_prev"], categories=order, ordered=True)
 
-        mds_col, md_true_col, md_up_col = st.columns(3)
+        mds_col, md_true_col, md_up_col, mds_prev_col = st.columns(4)
         with mds_col:
-            prev_md = st.selectbox("Choose Previous Model", order)
+            prev_prev_md = st.selectbox("Choose Model Before Previous", ["All"] + order)
         with md_true_col:
-            is_md_up = st.selectbox("Was Previous Model a Long breakout?", [True, False])
+            prev_md = st.selectbox("Choose Previous Model", ["All"] + order)
         with md_up_col:
-            is_md_true = st.selectbox("Has previous Session ORB rule hold true?", [True, False])
+            is_md_up = st.selectbox("Was Previous Model a Long breakout?", ["All", True, False])
+        with mds_prev_col:
+            is_md_true = st.selectbox("Has previous Session ORB rule hold true?", ["All", True, False])
 
         scenario_sel = st.multiselect("Potential scenarios for current session", order, order,
                                       help="Deselect models that can not happen anymore")
 
-        model_df = model_df[
-            (model_df.model_prev == prev_md) &
-            (model_df.upday_prev == is_md_up) &
-            (model_df.range_holds_prev == is_md_true) &
-            (model_df["model"].isin(scenario_sel))
-            ]
+        model_df_filtered = model_df
+        if prev_prev_md != "All":
+            model_df_filtered = model_df_filtered[model_df_filtered.model_prev_prev == prev_prev_md]
+        if prev_md != "All":
+            model_df_filtered = model_df_filtered[model_df_filtered.model_prev == prev_md]
+        if is_md_up != "All":
+            model_df_filtered = model_df_filtered[model_df_filtered.upday_prev == is_md_up]
+        if is_md_true != "All":
+            model_df_filtered = model_df_filtered[model_df_filtered.range_holds_prev == is_md_true]
 
-        model_df = model_df.groupby("model").agg({"model_prev": "count", "upday": "sum"}).reset_index()
-        model_df = model_df[model_df["model_prev"] != 0]
-        model_df["pct"] = model_df["model_prev"] / model_df["model_prev"].sum()
-        model_df["pct_upday"] = model_df["upday"] / model_df["model_prev"]
-        model_sample = model_df["model_prev"].sum()
+        model_df_filtered = model_df_filtered[model_df_filtered["model"].isin(scenario_sel)]
+
+        model_df_grouped = model_df_filtered.groupby("model").agg({"model_prev": "count", "upday": "sum"}).reset_index()
+        model_df_grouped = model_df_grouped[model_df_grouped["model_prev"] != 0]
+        model_df_grouped["pct"] = model_df_grouped["model_prev"] / model_df_grouped["model_prev"].sum()
+        model_df_grouped["pct_upday"] = model_df_grouped["upday"] / model_df_grouped["model_prev"]
+        model_sample = model_df_grouped["model_prev"].sum()
 
         st.divider()
         st.write("**Model Distribution based on previous Sessions Model**")
         st.write("")
-        st.bar_chart(model_df, y="pct", x="model", color=bar_color)
+        st.bar_chart(model_df_grouped, y="pct", x="model", color=bar_color)
 
         st.write("**Likelihood of up breakout for each model**")
 
@@ -629,73 +610,46 @@ with model:
             st.write("")
             st.write("")
             st.write("")
-            st.bar_chart(model_df, y="pct_upday", x="model", color=bar_color)
+            st.bar_chart(model_df_grouped, y="pct_upday", x="model", color=bar_color)
 
         else:
-            # Schritt 1: Knoten und ihre Indizes
+                        df_sankey = model_df_filtered[["model_prev_prev", "model_prev", "model"]].dropna()
+            df_sankey = df_sankey.rename(columns={"model_prev_prev": "Previous Previous Model", "model_prev": "Previous Model", "model": "Current Model"})
 
-            df_sankey = df[["model_prev", "model"]].dropna()
-            df_sankey['model'] = df_sankey['model'] + "_target"
-            all_labels = list(pd.concat([df_sankey['model_prev'], df_sankey['model']]).unique())  # order
-            label_indices = {label: idx for idx, label in enumerate(all_labels)}
+            # Create unique IDs for each node
+            all_nodes = pd.concat([df_sankey["Previous Previous Model"], df_sankey["Previous Model"], df_sankey["Current Model"]]).unique()
+            node_dict = {node: i for i, node in enumerate(all_nodes)}
 
-            # st.write(all_labels)
-            # st.write(label_indices)
+            # Map nodes to IDs
+            df_sankey['source1'] = df_sankey['Previous Previous Model'].map(node_dict)
+            df_sankey['target1'] = df_sankey['Previous Model'].map(node_dict)
+            df_sankey['source2'] = df_sankey['Previous Model'].map(node_dict)
+            df_sankey['target2'] = df_sankey['Current Model'].map(node_dict)
 
-            # Schritt 2: Links erstellen (von source nach target)
-            df_sankey['source'] = df_sankey['model_prev'].map(label_indices)
-            df_sankey['target'] = df_sankey['model'].map(label_indices)
-            df_sankey["model2"] = df_sankey['model'].replace("_target", "", regex=True)
+            # Calculate link values
+            link_data1 = df_sankey.groupby(['source1', 'target1']).size().reset_index(name='value')
+            link_data2 = df_sankey.groupby(['source2', 'target2']).size().reset_index(name='value')
 
-            df_sankey = df_sankey[(df_sankey['model2'].isin(scenario_sel)) &
-                                  (df_sankey['model_prev'] == prev_md)]
-
-            # Schritt 3: Häufigkeiten der Verbindungen berechnen
-            link_data = df_sankey.groupby(['source', 'target']).size().reset_index(name='value')
-            # link_data["pct"] = link_data["value"] / link_data["value"].sum()
-
-
+            # Define node colors
             color_dict = {
-                "Weak Uptrend": "#70AD47",
-                "Medium Uptrend": "#A9D08E",
-                "Strong Uptrend": "#E2EFDA",
-                "Contraction": "#FFD966",
-                "Expansion": "#B4C6E7",
-                "Weak Downtrend": "#FCE4D6",
-                "Medium Downtrend": "#F8CBAD",
-                "Strong Downtrend": "#C65911",
-                "Weak Uptrend_target": "#70AD47",
-                "Medium Uptrend_target": "#A9D08E",
-                "Strong Uptrend_target": "#E2EFDA",
-                "Contraction_target": "#FFD966",
-                "Expansion_target": "#B4C6E7",
-                "Weak Downtrend_target": "#FCE4D6",
-                "Medium Downtrend_target": "#F8CBAD",
-                "Strong Downtrend_target": "#C65911",
-
+                "Weak Uptrend": "#70AD47", "Medium Uptrend": "#A9D08E", "Strong Uptrend": "#E2EFDA",
+                "Contraction": "#FFD966", "Expansion": "#B4C6E7",
+                "Weak Downtrend": "#FCE4D6", "Medium Downtrend": "#F8CBAD", "Strong Downtrend": "#C65911"
             }
+            node_colors = [color_dict.get(label, "grey") for label in all_nodes]
 
-            node_colors = [color_dict.get(label, "grey") for label in all_labels]
-            link_colors = [node_colors[target] for target in link_data['target']]
+            # Create Sankey data
+            link_trace1 = go.Sankey(
+                node=dict(pad=15, thickness=20, line=dict(color="black", width=0.5), label=all_nodes, color=node_colors),
+                link=dict(source=link_data1['source1'], target=link_data1['target1'], value=link_data1['value'])
+            )
+            link_trace2 = go.Sankey(
+                link=dict(source=link_data2['source2'], target=link_data2['target2'], value=link_data2['value'])
+            )
 
-            # Schritt 4: Sankey-Diagramm erstellen
-            fig = go.Figure(go.Sankey(
-                node=dict(
-                    pad=15,
-                    thickness=20,
-                    line=dict(color="black", width=0.5),
-                    label=all_labels,
-                    color=node_colors
-                ),
-                link=dict(
-                    source=link_data['source'],
-                    target=link_data['target'],
-                    value=link_data['value'],
-                    color=link_colors
-                )
-            ))
-
+            fig = go.Figure(data=[link_trace1, link_trace2])
             st.plotly_chart(fig, use_container_width=True)
+
         st.write(f"Model prediction is based on a sample size of {model_sample}")
 
 with strategy_tester:
@@ -718,64 +672,40 @@ with strategy_tester:
                 tp = st.number_input("What is your take profit level:", step=0.1, value=1.5)
 
         if orb_side == "Long":
-            # Filter dataframe
-            # entries on retracement before hos or after high of the session
             strat_df = df[(df.retracement_level <= buy_in) |
                           ((df.retracement_level > buy_in) & (df.after_conf_min_level <= buy_in))]
 
             strat_df = strat_df[
                 ["after_conf_max_level", "after_conf_min_level", "session_close_level", "retracement_level",
                  "expansion_level"]]
-            # direct sl trades
             sl_df = strat_df[(strat_df.retracement_level <= sl) |
                              ((strat_df.retracement_level > sl) &
                               (strat_df.after_conf_min_level <= sl))
                              ]
-
-            # tp trades
             tp_df = strat_df[(strat_df.expansion_level >= tp) & (strat_df.retracement_level > sl)]
-
-            # delete sl from tp trades
             tp_df = tp_df.drop(sl_df.index, axis='index', errors="ignore")
-
-            # delete sl and tp trades from overall df
             part_df = strat_df.drop(sl_df.index, axis='index')
             part_df = part_df.drop(tp_df.index, axis='index')
-
-            # partial wins
             part_win_df = part_df[part_df.session_close_level >= buy_in]
             part_loss_df = part_df[part_df.session_close_level < buy_in]
 
-
         else:
-            # Filter dataframe
-            # entries on retracement before hos or after low of the session
             strat_df = df[(df.retracement_level >= buy_in) |
                           ((df.retracement_level < buy_in) & (df.after_conf_max_level > buy_in))]
             strat_df = strat_df[
                 ["after_conf_max_level", "after_conf_min_level", "session_close_level", "retracement_level",
                  "expansion_level"]]
-
-            # sl trades
             sl_df = strat_df[(strat_df.retracement_level >= sl) |
                              (strat_df.retracement_level < sl) &
                              (strat_df.after_conf_max_level >= sl)
                              ]
-            # tp trades
             tp_df = strat_df[(strat_df.expansion_level <= tp) & (strat_df.retracement_level < sl)]
-
-            # delete sl from tp trades
             tp_df = tp_df.drop(sl_df.index, axis='index', errors="ignore")
-
-            # delete sl and tp trades from overall df
             part_df = strat_df.drop(sl_df.index, axis='index')
             part_df = part_df.drop(tp_df.index, axis='index')
-
-            # partial wins
             part_win_df = part_df[part_df.session_close_level <= buy_in]
             part_loss_df = part_df[part_df.session_close_level > buy_in]
 
-            # calc kpis
         trade_count = len(strat_df.index)
         sl_count = len(sl_df.index)
         tp_count = len(tp_df.index)
@@ -822,9 +752,7 @@ with strategy_tester:
             st.metric("Avg. Realized Risk Multiple", f"{avg_risk_reward: .2f}")
         with real_r:
 
-            # Equity Curve
             sl_df["R"] = -1
-
             tp_df["R"] = target_tp
             part_df["R"] = real_par_rr
 
@@ -862,8 +790,6 @@ with ml:
         st.error("Please select a greenbox status. It´s an important feature of the ML prediction.")
     open_level = st.selectbox("What is the price level of the opening price?", [i / 10 for i in range(11)])
     close_level = st.selectbox("What is the price level of the closing price?", [i / 10 for i in range(11)])
-    # gbox = [1 if greenbox == "True" else 0]
-    # st.write(gbox[0])
     pred_values = [[1 if greenbox == "True" else 0][0], open_level, close_level]
 
     model, scaler = load_ml_model(symbol)
@@ -966,10 +892,7 @@ with disclaimer:
         "By accessing this website, you acknowledge and agree to the terms of this disclaimer. The content on this homepage is subject to change without notice."
     )
 
-
-
 st.divider()
 start_date = df.index[0].strftime("%Y-%m-%d")
 end_date = df.index[-1].strftime("%Y-%m-%d")
 st.write(f"Statistics based on :red[{len(df)}] data points from :red[{start_date}] to :red[{end_date}]")
-
